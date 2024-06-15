@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:moneytracker/pages/models/category.dart';
 import 'package:moneytracker/pages/models/transaction.dart';
+import 'package:moneytracker/pages/models/transaction_with_category.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
@@ -23,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
   //CRUD KATEGORI
 
   Future<List<Category>> getAllCategoryRepo(int type) async {
-    return await (select(categories..where((tbl) => tbl.type.equals(type))))
+    return await (select(categories)..where((tbl) => tbl.type.equals(type)))
         .get();
   } // Getter harus memiliki tubuh
 
@@ -31,12 +32,27 @@ class AppDatabase extends _$AppDatabase {
     return (update(categories)..where((tbl) => tbl.id.equals(id)))
         .write(CategoriesCompanion(name: Value(name)));
   }
-  
+
   Future deletecategoryRepo(int id) async {
-    return (delete(categories)..where((tbl) => tbl.id.equals(id)))
-       .go();
+    return (delete(categories)..where((tbl) => tbl.id.equals(id))).go();
   }
 
+  //Transaksi\
+
+  Stream<List<TransactionWithCategory>> getTransactionByDateRepo(
+      DateTime date) {
+    final query = (select(transactions).join([
+      innerJoin(categories, categories.id.equalsExp(transactions.category_id))
+    ])
+      ..where(transactions.transaction_date.equals(date)));
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        return TransactionWithCategory(
+            row.readTable(transactions), row.readTable(categories));
+      }).toList();
+    });
+  }
 }
 
 LazyDatabase _openConnection() {
