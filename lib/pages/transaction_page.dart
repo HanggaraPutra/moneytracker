@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:moneytracker/pages/home_page.dart';
 
 import 'package:moneytracker/pages/models/database.dart';
+import 'package:moneytracker/pages/models/transaction_with_category.dart';
 
 class TransactionPage extends StatefulWidget {
-  const TransactionPage({super.key});
+  final TransactionWithCategory? transactionWithCategory;
+  const TransactionPage({super.key, required this.transactionWithCategory});
 
   @override
   State<TransactionPage> createState() => _TransactionPageState();
@@ -13,6 +16,7 @@ class TransactionPage extends StatefulWidget {
 
 class _TransactionPageState extends State<TransactionPage> {
   final AppDatabase database = AppDatabase();
+
   bool isExpense = true;
 
   late int type;
@@ -47,10 +51,33 @@ class _TransactionPageState extends State<TransactionPage> {
     return await database.getAllCategoryRepo(type);
   }
 
+  Future update(int transactionId, int amount, int categoryId,
+      DateTime transactionDate, String nameDetail) async {
+    return await database.updateTransactionRepo(
+        transactionId, amount, categoryId, transactionDate, nameDetail);
+  }
+
   @override
   void initState() {
-    type = 2;
+    if (widget.transactionWithCategory != null) {
+      updateTransactionView(widget.transactionWithCategory!);
+    } else {
+      type = 2;
+    }
     super.initState();
+  }
+
+  void updateTransactionView(TransactionWithCategory transactionWithCategory) {
+    setState(() {
+      amountController.text =
+          transactionWithCategory.transaction.amount.toString();
+      detailController.text = transactionWithCategory.transaction.name;
+      dateController.text = DateFormat("yyyy-MM-dd")
+          .format(transactionWithCategory.transaction.transaction_date);
+      type = transactionWithCategory.category.type;
+      isExpense = (type == 2);
+      selectCategory = transactionWithCategory.category;
+    });
   }
 
   @override
@@ -119,8 +146,8 @@ class _TransactionPageState extends State<TransactionPage> {
                     } else {
                       if (snapshot.hasData) {
                         if (snapshot.data!.isNotEmpty) {
-                          selectCategory ??= snapshot.data!.first; // Inisialisasi jika null
-                          print('apannih : ' + snapshot.toString());
+                          selectCategory ??=
+                              snapshot.data!.first; // Inisialisasi jika null
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: DropdownButton<Category>(
@@ -192,30 +219,23 @@ class _TransactionPageState extends State<TransactionPage> {
               Center(
                 child: ElevatedButton(
                   onPressed: () async {
-                    if (selectCategory != null) {
-                      try {
-                        await insert(
-                          int.parse(amountController.text),
-                          DateTime.parse(dateController.text),
-                          detailController.text,
-                          selectCategory!.id,
-                        );
+                    (widget.transactionWithCategory == null)
+                        ? insert(
+                            int.parse(amountController.text),
+                            DateTime.parse(dateController.text),
+                            detailController.text,
+                            selectCategory!.id)
+                        : await update(
+                            widget.transactionWithCategory!.transaction.id,
+                            int.parse(amountController.text),
+                            selectCategory!.id,
+                            DateTime.parse(dateController.text),
+                            detailController.text);
+                    setState(() {
+                      HomePage;
+                    });
 
-                        amountController.clear();
-                        dateController.clear();
-                        detailController.clear();
-
-                        Navigator.pop(context, true); // Navigasi balik setelah penyimpanan selesai
-                      } catch (e) {
-                        print("Error saving transaction: $e");
-                        // Tangani error jika diperlukan
-                      }
-                    } else {
-                      // Tampilkan pesan error jika kategori tidak dipilih
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Please select a category")),
-                      );
-                    }
+                    Navigator.pop(context, true);
                   },
                   child: Text("Save"),
                 ),

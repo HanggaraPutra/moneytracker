@@ -76,7 +76,7 @@ class _MainPageState extends State<MainPage> {
             Navigator.of(context)
                 .push(
               MaterialPageRoute(
-                builder: (context) => TransactionPage(),
+                builder: (context) => TransactionPage(transactionWithCategory: null,),
               ),
             )
                 .then((value) {
@@ -104,7 +104,7 @@ class _MainPageState extends State<MainPage> {
             ),
             IconButton(
                 onPressed: () {
-                  updateView(0, null);
+                  updateView(1, null);
                 },
                 icon: Icon(Icons.list))
           ],
