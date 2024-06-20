@@ -120,8 +120,6 @@ class $CategoriesTable extends Categories
   $CategoriesTable createAlias(String alias) {
     return $CategoriesTable(attachedDatabase, alias);
   }
-
-  where(Function(dynamic tbl) param0) {}
 }
 
 class Category extends DataClass implements Insertable<Category> {

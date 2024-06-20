@@ -16,17 +16,30 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final AppDatabase database = AppDatabase();
 
+  int _totalIncome = 0;
+  int _totalExpense = 0;
+
   @override
   void initState() {
     super.initState();
-    _logTransactions(); // Log transactions on initState
+    _logTransactions(); // Log   transactions on initState
+    _loadTotalAmount();
   }
 
   void _logTransactions() async {
     final transactions =
         await database.getTransactionByDateRepo(widget.selectedDate).first;
     print("Transactions on ${widget.selectedDate}: $transactions");
-    
+  }
+
+  Future<void> _loadTotalAmount() async {
+    final tahun = DateTime.now().year;
+    final bulan = DateTime.now().month;
+    final result = await database.getTotalAmountByMonthRepo(tahun, bulan);
+    setState(() {
+      _totalIncome = result['income']!;
+      _totalExpense = result['expense']!;
+    });
   }
 
   bool isExpense = true;
@@ -73,7 +86,7 @@ class _HomePageState extends State<HomePage> {
                             height: 10,
                           ),
                           Text(
-                            "Rp. 3.000.000",
+                            'Rp.$_totalIncome',
                             style: GoogleFonts.montserrat(
                                 color: Colors.white, fontSize: 12),
                           ),
@@ -109,7 +122,7 @@ class _HomePageState extends State<HomePage> {
                             height: 10,
                           ),
                           Text(
-                            "Rp. 3.000.000",
+                            ' \Rp.$_totalExpense',
                             style: GoogleFonts.montserrat(
                                 color: Colors.white, fontSize: 12),
                           ),

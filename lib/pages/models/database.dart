@@ -69,6 +69,46 @@ class AppDatabase extends _$AppDatabase {
   Future deleteTransactionRepo(int id) async {
     return (delete(transactions)..where((tbl) => tbl.id.equals(id))).go();
   }
+
+    Future<Map<String, int>> getTotalAmountByMonthRepo(int tahun, int bulan) async {
+    // Join transactions dengan categories untuk mendapatkan tipe kategori
+    final queryIncome = (select(transactions)
+      ..where((tbl) => tbl.transaction_date.year.equals(tahun) &
+            tbl.transaction_date.month.equals(bulan) &
+            tbl.category_id.equalsExp(categories.id))
+    ).join([
+      innerJoin(categories, categories.id.equalsExp(transactions.category_id))
+    ])
+    ..where(categories.type.equals(1));
+
+    final queryExpense = (select(transactions)
+      ..where((tbl) => tbl.transaction_date.year.equals(tahun) &
+            tbl.transaction_date.month.equals(bulan) &
+            tbl.category_id.equalsExp(categories.id))
+    ).join([
+      innerJoin(categories, categories.id.equalsExp(transactions.category_id))
+    ])
+    ..where(categories.type.equals(2));
+
+    // Execute the queries and extract the results
+    final resultsIncome = await queryIncome.get();
+    final resultsExpense = await queryExpense.get();
+
+    // Sum the amounts for income and expense
+    int totalIncome = resultsIncome.isNotEmpty
+        ? resultsIncome.map((row) => row.readTable(transactions).amount).reduce((a, b) => a + b)
+        : 0;
+
+    int totalExpense = resultsExpense.isNotEmpty
+        ? resultsExpense.map((row) => row.readTable(transactions).amount).reduce((a, b) => a + b)
+        : 0;
+
+    return {
+      'income': totalIncome,
+      'expense': totalExpense,
+    };
+  }
+
 }
 
 LazyDatabase _openConnection() {
